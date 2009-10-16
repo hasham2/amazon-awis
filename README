@@ -1,0 +1,57 @@
+== amazon-awis
+
+Ruby Amazon Alexa web service REST API using Hpricot with configurable 
+default options and method call options. Uses Response and 
+Element wrapper classes for easy access to REST XML output.
+
+Version: 0.1.0
+
+== INSTALLATION
+
+  $ gem install amazon-awis
+
+== EXAMPLE
+
+    require 'amazon/awis'
+	
+    # set the default options; options will be camelized and converted to REST request parameters.
+    Amazon::Awis.options = {:aws_access_key_id => [your access key]}
+
+    # to generate signed requests include your secret key:
+    Amazon::Awis.options = {:aws_access_key_id => [your developer token], :aws_secret_key => [your secret access key]}
+
+    # alternatively,
+    Amazon::Awis.configure do |options|
+        options[:aws_access_key_id] = [your access key]
+        options[:aws_secret_key] = [you secret key]
+    end
+
+    # options provided on method call will merge with the default options
+    res = Amazon::Awis.get_info('yahoo.com')
+
+    # some common response object methods    
+    res.has_error?            # return true if there is an error
+    res.is_success?           # return true if request was successful
+   
+    res.traffic_rank          # return the rank of domain name that was passed
+
+    
+
+Refer to Amazon ECS documentation for more information on Amazon REST request parameters and XML output:
+http://docs.amazonwebservices.com/AlexaWebInfoService/2005-07-11/
+
+== SOURCE CODES
+
+* http://github.com/hasham2/amazon-awis/tree/master
+
+== LINKS
+
+* http://github.com/hasham2/amazon-awis
+* http://hasham2.blogspot.com
+
+
+== LICENSE
+
+(The MIT License)
+
+Copyright (c) 2009 Hasham Malik
