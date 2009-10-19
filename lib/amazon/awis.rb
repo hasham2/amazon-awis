@@ -27,7 +27,6 @@ require "openssl"
 require "digest/sha1"
 require "uri"
 require "net/https"
-require "rexml/document"
 require "time"
 require "hpricot"
 
@@ -103,7 +102,13 @@ module Amazon
       	      (@doc/"aws:statuscode").innerHTML == "Success"     	      	      
       end
       
-            
+      #returns inner html of any tag in awis response
+      def get(item)
+      	      item = item.strip
+      	      return unless item
+      	      (@doc/"aws:#{item}").innerHTML
+      end      
+      
       # Return traffic rank.
       def traffic_rank      	      
       	      unless @traffic_rank
