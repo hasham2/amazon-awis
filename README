@@ -24,17 +24,18 @@ Version: 0.1.0
     Amazon::Awis.configure do |options|
         options[:aws_access_key_id] = [your access key]
         options[:aws_secret_key] = [you secret key]
+        options[:responsegroup] = 'Rank'
     end
 
     # options provided on method call will merge with the default options
     res = Amazon::Awis.get_info('yahoo.com')
 
-    # some common response object methods    
-    res.has_error?            # return true if there is an error
-    res.is_success?           # return true if request was successful
+    # some common response object methods        
+    res.is_success?   # return true if request was successful
    
-    res.traffic_rank          # return the rank of domain name that was passed
-
+    #dynamic methods
+    res.rank          # return the rank of domain name that was passed
+    res.dataurl	      # returns the url which was queried 
     
 
 Refer to Amazon ECS documentation for more information on Amazon REST request parameters and XML output:

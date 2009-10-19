@@ -90,32 +90,38 @@ module Amazon
       # Return Hpricot object.
       def doc
       	      @doc
-      end
-
+      end      
+      
       # Return true if response has an error.
       def has_error?
-      	      !(is_success?)
+        !(error.nil? || error.empty?)
       end
 
+      # Return error message.
+      def error
+        Element.get(@doc, "error/message")
+      end
+      
+      # Return error code
+      def error_code
+        Element.get(@doc, "error/code")
+      end
+      
       # Return error message.
       def is_success?
       	      (@doc/"aws:statuscode").innerHTML == "Success"     	      	      
       end
       
-      #returns inner html of any tag in awis response
-      def get(item)
-      	      item = item.strip
-      	      return unless item
-      	      (@doc/"aws:#{item}").innerHTML
-      end      
-      
-      # Return traffic rank.
-      def traffic_rank      	      
-      	      unless @traffic_rank
-      	      	      @trafic_rank = (@doc/"aws:rank").innerHTML.to_i
-      	      end
-      	      @trafic_rank
-      end
+      #returns inner html of any tag in awis response i.e resp.rank => 3
+      def method_missing(methodId)
+      	      txt = (@doc/"aws:#{methodId.id2name}").innerHTML
+      	      if txt.empty?
+      	      	      raise NoMethodError 		      
+      	      else
+      	      	      txt
+      	      end	      
+      end	                  
+            
     end
     
     protected
@@ -136,8 +142,8 @@ module Amazon
     def self.prepare_url(domain)
     	    
     	    timestamp = ( Time::now ).utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")    	    
-    	    secret_key = secret_key = self.options.delete(:aws_secret_key)    	    
-    	    action = self.options.delete(:action)    	    
+    	    secret_key = secret_key = self.options[:aws_secret_key]    	    
+    	    action = self.options[:action]    	    
     	    signature = Base64.encode64( OpenSSL::HMAC.digest( OpenSSL::Digest::Digest.new( "sha1" ), secret_key, action + timestamp)).strip    	    
     	    url = URI.parse("http://awis.amazonaws.com/?" +
     	    	    	{
