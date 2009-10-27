@@ -16,7 +16,8 @@ Gem::Specification.new do |s|
     "README"
   ]
   s.files = [
-    "CHANGELOG",
+    ".gitignore",
+     "CHANGELOG",
      "MIT-LICENSE",
      "README",
      "Rakefile",

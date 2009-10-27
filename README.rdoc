@@ -38,7 +38,7 @@ Version: 0.1.0
     res.dataurl	      # returns the url which was queried 
     
 
-Refer to Amazon ECS documentation for more information on Amazon REST request parameters and XML output:
+Refer to Amazon AWIS documentation for more information on Amazon REST request parameters and XML output:
 http://docs.amazonwebservices.com/AlexaWebInfoService/2005-07-11/
 
 == SOURCE CODES
