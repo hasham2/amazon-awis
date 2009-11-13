@@ -27,7 +27,7 @@ Version: 0.1.0
         options[:responsegroup] = 'Rank'
     end
 
-    # options provided on method call will merge with the default options
+    #Call get_info method to get website info
     res = Amazon::Awis.get_info('yahoo.com')
 
     # some common response object methods        
