@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 Hasham Malik
+# Copyright (c) 2010 Daniel Gaiottino (Based on the initial work by Hasham Malik)
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -35,61 +35,69 @@ module Amazon
   class RequestError < StandardError; end
   
   class Awis
-  	  
-    @@options = {
-    	    :action => "UrlInfo",
-    	    :responsegroup => "Rank"
-    }
+    @@config = {}
     
     @@debug = false
 
+    def initialize(opts={})
+      @options = {
+        :action => "UrlInfo",
+      }
+      @options.merge!(opts)
+      
+      raise 'Use Awis.configure before creating a new object to set :aws_access_key_id and :aws_secret_key' unless @@config[:aws_access_key_id] && @@config[:aws_secret_key]
+      raise 'Missing required option :domain' unless options[:domain]
+    end
+    
+    def self.configure(&proc)
+      raise ArgumentError, "Block is required." unless block_given?
+      yield @@config
+    end
+    
     # Default service options
-    def self.options
-    	    @@options
+    def options
+      @options
     end
     
     # Set default service options
-    def self.options=(opts)
-    	    @@options = opts
+    def options=(opts)
+      @options = opts
     end
     
     # Get debug flag.
     def self.debug
-    	    @@debug
+      @@debug
     end
     
     # Set debug flag to true or false.
     def self.debug=(dbg)
-    	    @@debug = dbg
+      @@debug = dbg
     end
     
-    def self.configure(&proc)
-    	    raise ArgumentError, "Block is required." unless block_given?
-    	    yield @@options
-    end
-    
-    def self.get_info(domain)    
-    	    url = self.prepare_url(domain)
-    	    log "Request URL: #{url}"
-    	    res = Net::HTTP.get_response(url)
-    	    unless res.kind_of? Net::HTTPSuccess
-    	    	    raise Amazon::RequestError, "HTTP Response: #{res.code} #{res.message}"
-    	    end
-    	    log "Response text: #{res.body}"
-    	    Response.new(res.body)
-    end	    
-	        
+    def query(response_group)
+      raise 'Must specify Response Group e.g. :rank, rank, or Rank for Rank' unless response_group
+      
+      url = prepare_url(options[:domain], response_group)
+      
+      log "Request URL: #{url}"
+      res = Net::HTTP.get_response(url)
+      unless res.kind_of? Net::HTTPSuccess
+        raise Amazon::RequestError, "HTTP Response: #{res.code} #{res.message}"
+      end
+      log "Response text: #{res.body}"
+      Response.new(res.body)
+    end	
     
     # Response object returned after a REST call to Amazon service.
     class Response
       # XML input is in string format
       def initialize(xml)
-      	      @doc = Hpricot(xml)
+        @doc = Hpricot(xml)
       end
 
       # Return Hpricot object.
       def doc
-      	      @doc
+        @doc
       end      
       
       # Return true if response has an error.
@@ -109,154 +117,158 @@ module Amazon
       
       # Return error message.
       def is_success?
-      	      (@doc/"aws:statuscode").innerHTML == "Success"     	      	      
+        (@doc/"aws:statuscode").innerHTML == "Success"
       end
       
       #returns inner html of any tag in awis response i.e resp.rank => 3
       def method_missing(methodId)
-      	      txt = (@doc/"aws:#{methodId.id2name}").innerHTML
-      	      if txt.empty?
-      	      	      raise NoMethodError 		      
-      	      else
-      	      	      txt
-      	      end	      
-      end	                  
-            
+        txt = (@doc/"aws:#{methodId.id2name}").innerHTML
+        if txt.empty?
+          raise NoMethodError
+        else
+          txt
+        end
+      end
+
     end
     
-    protected
+  protected
     
-    def self.log(s)
-    	    return unless self.debug
-    	    if defined? RAILS_DEFAULT_LOGGER
-    	    	    RAILS_DEFAULT_LOGGER.error(s)
-    	    elsif defined? LOGGER
-    	    	    LOGGER.error(s)
-    	    else
-    	    	    puts s
-    	    end
+    def log(s)
+      return unless Awis.debug
+      if defined? RAILS_DEFAULT_LOGGER
+        RAILS_DEFAULT_LOGGER.error(s)
+      elsif defined? LOGGER
+        LOGGER.error(s)
+      else
+        puts s
+      end
     end
       
-    private 
+  private 
     
-    def self.prepare_url(domain)
-    	    
-    	    timestamp = ( Time::now ).utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")    	    
-    	    secret_key = secret_key = self.options[:aws_secret_key]    	    
-    	    action = self.options[:action]    	    
-    	    signature = Base64.encode64( OpenSSL::HMAC.digest( OpenSSL::Digest::Digest.new( "sha1" ), secret_key, action + timestamp)).strip    	    
-    	    url = URI.parse("http://awis.amazonaws.com/?" +
-    	    	    	{
-    	    	    		"Action"       => action,
-    	    	    		"AWSAccessKeyId"  => self.options[:aws_access_key_id],
-    	    	    		"Signature"       => signature,
-    	    	    		"Timestamp"       => timestamp,
-    	    	    		"ResponseGroup"   => self.options[:responsegroup],
-    	    	    		"Url"           => domain
-          		}.to_a.collect{|item| item.first + "=" + CGI::escape(item.last) }.join("&")
-          		)
-            return url
-    	    
+    def prepare_url(domain, response_group)
+      timestamp = ( Time::now ).utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+      secret_key = @@config[:aws_secret_key]
+      action = options[:action]
+      signature = Base64.encode64( OpenSSL::HMAC.digest( OpenSSL::Digest::Digest.new( "sha1" ), secret_key, action + timestamp)).strip
+      url = URI.parse("http://awis.amazonaws.com/?" +
+        {
+          "Action"          => action,
+          "AWSAccessKeyId"  => @@config[:aws_access_key_id],
+          "Signature"       => signature,
+          "Timestamp"       => timestamp,
+          "ResponseGroup"   => camelize(response_group.to_s),
+          "Url"             => domain
+        }.to_a.collect{|item| item.first + "=" + CGI::escape(item.last) }.join("&")
+      )
+      return url
     end
-     
+    
+    def camelize(lower_case_and_underscored_word)
+      lower_case_and_underscored_word.to_s.gsub(/\/(.?)/) { "::" + $1.upcase }.gsub(/(^|_)(.)/) { $2.upcase }
+    end
+    
   end
 
   # Internal wrapper class to provide convenient method to access Hpricot element value.
   class Element
     # Pass Hpricot::Elements object
     def initialize(element)
-    	    @element = element
+      @element = element
     end
 
     # Returns Hpricot::Elments object    
     def elem
-    	    @element
+      @element
     end
     
     # Find Hpricot::Elements matching the given path. Example: element/"author".
     def /(path)
-    	    elements = @element/path
-    	    return nil if elements.size == 0
-    	    elements
+      elements = @element/path
+      return nil if elements.size == 0
+      elements
     end
     
     # Find Hpricot::Elements matching the given path, and convert to Amazon::Element.
     # Returns an array Amazon::Elements if more than Hpricot::Elements size is greater than 1.
     def search_and_convert(path)
-    	    elements = self./(path)
-    	    return unless elements
-    	    elements = elements.map{|element| Element.new(element)}
-    	    return elements.first if elements.size == 1
-    	    elements
+      elements = self./(path)
+      return unless elements
+      
+      elements = elements.map{|element| Element.new(element)}
+      return elements.first if elements.size == 1
+      
+      elements
     end
 
     # Get the text value of the given path, leave empty to retrieve current element value.
     def get(path='')
-    	    Element.get(@element, path)
+      Element.get(@element, path)
     end
     
     # Get the unescaped HTML text of the given path.
     def get_unescaped(path='')
-    	   Element.get_unescaped(@element, path)
+      Element.get_unescaped(@element, path)
     end
     
     # Get the array values of the given path.
     def get_array(path='')
-      	   Element.get_array(@element, path)
+      Element.get_array(@element, path)
     end
 
     # Get the children element text values in hash format with the element names as the hash keys.
     def get_hash(path='')
-      	   Element.get_hash(@element, path)
+      Element.get_hash(@element, path)
     end
 
     # Similar to #get, except an element object must be passed-in.
     def self.get(element, path='')
-      	   return unless element
-           result = element.at(path)
-           result = result.inner_html if result
-           result
+      return unless element
+      result = element.at(path)
+      result = result.inner_html if result
+      result
     end
     
     # Similar to #get_unescaped, except an element object must be passed-in.    
     def self.get_unescaped(element, path='')
-           result = get(element, path)
-           CGI::unescapeHTML(result) if result
+      result = get(element, path)
+      CGI::unescapeHTML(result) if result
     end
 
     # Similar to #get_array, except an element object must be passed-in.
     def self.get_array(element, path='')
-          return unless element
+      return unless element
       
-          result = element/path
-          if (result.is_a? Hpricot::Elements) || (result.is_a? Array)
-          	  parsed_result = []
-          	  result.each {|item|
-          	  	  parsed_result << Element.get(item)
-          	  }
-          	  parsed_result
-          else
-          	  [Element.get(result)]
-          end
+      result = element/path
+      if (result.is_a? Hpricot::Elements) || (result.is_a? Array)
+        parsed_result = []
+        result.each {|item|
+          parsed_result << Element.get(item)
+        }
+        parsed_result
+      else
+        [Element.get(result)]
+      end
     end
 
     # Similar to #get_hash, except an element object must be passed-in.
     def self.get_hash(element, path='')
-    	    return unless element
-    
-    	    result = element.at(path)
-    	    if result
-    	    	    hash = {}
-    	    	    result = result.children
-    	    	    result.each do |item|
-    	    	    	    hash[item.name.to_sym] = item.inner_html
-    	    	    end 
-    	    	    hash
-    	    end
+      return unless element
+
+      result = element.at(path)
+      if result
+        hash = {}
+        result = result.children
+        result.each do |item|
+          hash[item.name.to_sym] = item.inner_html
+        end 
+        hash
+      end
     end
-    
+
     def to_s
-    	    elem.to_s if elem
+      elem.to_s if elem
     end
   end
 end

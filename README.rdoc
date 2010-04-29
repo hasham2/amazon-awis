@@ -4,7 +4,9 @@ Ruby Amazon Alexa web service REST API using Hpricot with configurable
 default options and method call options. Uses Response and 
 Element wrapper classes for easy access to REST XML output.
 
-Version: 0.1.0
+This version is based on http://github.com/hasham2/amazon-awis but I didn't 
+like how it was possible to globally alter options. The AWS_ACCESS_KEY_ID and AWS_SECRET_KEY
+are still global since one will likely only want to initialize these once.
 
 == INSTALLATION
 
@@ -12,30 +14,30 @@ Version: 0.1.0
 
 == EXAMPLE
 
+    require 'rubygems'
     require 'amazon/awis'
 	
-    # set the default options; options will be camelized and converted to REST request parameters.
-    Amazon::Awis.options = {:aws_access_key_id => [your access key]}
-
-    # to generate signed requests include your secret key:
-    Amazon::Awis.options = {:aws_access_key_id => [your developer token], :aws_secret_key => [your secret access key]}
-
-    # alternatively,
-    Amazon::Awis.configure do |options|
-        options[:aws_access_key_id] = [your access key]
-        options[:aws_secret_key] = [you secret key]
-        options[:responsegroup] = 'Rank'
+    # set the default config; config will be camelized and converted to REST request parameters.
+    Amazon::Awis.configure do |config|
+      config[:aws_access_key_id] = AWS_ACCESS_KEY_ID
+      config[:aws_secret_key] = AWS_SECRET_KEY
     end
 
-    #Call get_info method to get website info
-    res = Amazon::Awis.get_info('yahoo.com')
+    # create an instance of Awis for a specific action and domain
+    awis = Amazon::Awis.new({ :action => :url_info, :domain => 'google.com' })
 
+    # call query with the Response Group you want
+    resp = awis.query(:rank)
+    
     # some common response object methods        
     res.is_success?   # return true if request was successful
    
     #dynamic methods
     res.rank          # return the rank of domain name that was passed
-    res.dataurl	      # returns the url which was queried 
+    res.dataurl	      # returns the url which was queried
+    
+    # Query another action/domain after updating the options
+    awis.options[:domain] = 'yahoo.com/'
     
 
 Refer to Amazon AWIS documentation for more information on Amazon REST request parameters and XML output:
@@ -43,16 +45,10 @@ http://docs.amazonwebservices.com/AlexaWebInfoService/2005-07-11/
 
 == SOURCE CODES
 
-* http://github.com/hasham2/amazon-awis/tree/master
-
-== LINKS
-
-* http://github.com/hasham2/amazon-awis
-* http://hasham2.blogspot.com
-
+* http://github.com/gaiottino/amazon-awis
 
 == LICENSE
 
 (The MIT License)
 
-Copyright (c) 2009 Hasham Malik
+Copyright (c) 2010 Daniel Gaiottino (Based on the initial work by Hasham Malik)

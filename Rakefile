@@ -10,9 +10,9 @@ begin
 		gemspec.name = "amazon-awis"
 		gemspec.summary = "Ruby Amazon Alexa web information service REST API"
 		gemspec.description = "Ruby Amazon Alexa web information service REST API"
-		gemspec.email = "hasham2@gmail.com"
-		gemspec.homepage = "http://hasham2.blogspot.com"
-		gemspec.authors = ["Hasham Malik"]
+		gemspec.email = "daniel.gaiottino@gmail.com"
+		gemspec.homepage = "http://github.com/gaiottino/amazon-awis"
+		gemspec.authors = ["Daniel Gaiottino"]
 		gemspec.add_dependency('hpricot', '>= 0.4')
 	end
 	Jeweler::GemcutterTasks.new

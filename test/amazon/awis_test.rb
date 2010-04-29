@@ -8,42 +8,54 @@ class Amazon::AwisTest < Test::Unit::TestCase
   DOMAIN_STRING = 'yahoo.com'
   
   raise "Please specify set your AWS_ACCESS_KEY_ID" if AWS_ACCESS_KEY_ID.empty?
-  raise "Please specify set your AWS_SECRET_KEY" if AWS_SECRET_KEY.empty?    
+  raise "Please specify set your AWS_SECRET_KEY" if AWS_SECRET_KEY.empty?
   
-  Amazon::Awis.configure do |options|    
-  	  options[:aws_access_key_id] = AWS_ACCESS_KEY_ID
-  	  options[:aws_secret_key] = AWS_SECRET_KEY
+  Amazon::Awis.configure do |config|
+    config[:aws_access_key_id] = AWS_ACCESS_KEY_ID
+    config[:aws_secret_key] = AWS_SECRET_KEY
   end
   
   Amazon::Awis.debug = true
+    
+  def setup
+    @awis = Amazon::Awis.new({
+      :domain => DOMAIN_STRING
+    })
+  end
   
   ## Test get_info
-  def test_get_info  	  
-  	  Amazon::Awis.configure do |options|
-  	  	  options[:responsegroup] = 'Rank'
-  	  end
-  	  resp = Amazon::Awis.get_info(DOMAIN_STRING)     	  
-  	  assert(resp.is_success?)  	  
-  	  assert(resp.dataurl == 'yahoo.com/')
-  	  assert(resp.rank == 3.to_s)    
+  def test_query
+    resp = @awis.query(:rank)
+
+    assert(resp.is_success?)  	  
+    assert(resp.dataurl == 'yahoo.com/')
+    assert(resp.rank == 4.to_s)    
   end
    
-  ## Test get_info with SiteData response group
+  # Test get_info with SiteData response group
   def test_site_data_response
-  	  Amazon::Awis.configure do |options|    
-  	  	  options[:responsegroup] = 'SiteData'  	  	   	  	 
-  	  end
-  	  resp = Amazon::Awis.get_info(DOMAIN_STRING)
-  	  assert(resp.title == 'Yahoo!')
-  	  assert(resp.onlinesince == '18-Jan-1995')
+    resp = @awis.query(:site_data)
+
+    assert(resp.is_success?)
+    assert(resp.title == 'Yahoo!')
+    assert(resp.onlinesince == '18-Jan-1995')
   end
   
   ## Test get_info with ContactInfo response group
   def test_contact_info_response
-  	  Amazon::Awis.configure do |options|
-  	  	  options[:responsegroup] = 'ContactInfo'
-  	  end
-	  resp = Amazon::Awis.get_info(DOMAIN_STRING)
-	  assert(resp.symbol == 'YHOO')
+    resp = @awis.query(:contact_info)
+    
+    assert(resp.is_success?)
+    assert(resp.symbol == 'YHOO')
+  end
+  
+  def test_with_another_domain
+    @awis.options[:domain] = 'google.com/'
+    
+    resp = @awis.query(:rank)
+    
+    assert(resp.is_success?)
+    assert(resp.dataurl == 'google.com/')
+    assert(resp.rank == 1.to_s)
   end
 end
