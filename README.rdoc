@@ -10,7 +10,7 @@ are still global since one will likely only want to initialize these once.
 
 == INSTALLATION
 
-  $ gem install amazon-awis
+  $ gem install gaiottino-amazon-awis
 
 == EXAMPLE
 
