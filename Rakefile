@@ -7,7 +7,7 @@ require 'rake/packagetask'
 begin
 	require 'jeweler'
 	Jeweler::Tasks.new do |gemspec| 
-		gemspec.name = "amazon-awis"
+		gemspec.name = "gaiottino-amazon-awis"
 		gemspec.summary = "Ruby Amazon Alexa web information service REST API"
 		gemspec.description = "Ruby Amazon Alexa web information service REST API"
 		gemspec.email = "daniel.gaiottino@gmail.com"
