@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
-     "amazon-awis.gemspec",
+     "gaiottino-amazon-awis.gemspec",
      "lib/amazon/awis.rb",
      "test/amazon/awis_test.rb",
      "test/test_helper.rb"
