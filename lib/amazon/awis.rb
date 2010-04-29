@@ -41,7 +41,7 @@ module Amazon
 
     def initialize(opts={})
       @options = {
-        :action => "UrlInfo",
+        :action => :url_info,
       }
       @options.merge!(opts)
       
@@ -150,7 +150,7 @@ module Amazon
     def prepare_url(domain, response_group)
       timestamp = ( Time::now ).utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
       secret_key = @@config[:aws_secret_key]
-      action = options[:action]
+      action = camelize(options[:action].to_s)
       signature = Base64.encode64( OpenSSL::HMAC.digest( OpenSSL::Digest::Digest.new( "sha1" ), secret_key, action + timestamp)).strip
       url = URI.parse("http://awis.amazonaws.com/?" +
         {
