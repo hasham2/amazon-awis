@@ -12,14 +12,10 @@ Gem::Specification.new do |s|
   s.date = %q{2009-10-19}
   s.description = %q{Ruby Amazon Alexa web information service REST API}
   s.email = %q{hasham2@gmail.com}
-  s.extra_rdoc_files = [
-    "README"
-  ]
   s.files = [
     ".gitignore",
      "CHANGELOG",
      "MIT-LICENSE",
-     "README",
      "Rakefile",
      "VERSION",
      "amazon-awis.gemspec",
