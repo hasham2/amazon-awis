@@ -73,7 +73,7 @@ module Amazon
     	    log "Request URL: #{url}"
     	    res = Net::HTTP.get_response(url)
     	    unless res.kind_of? Net::HTTPSuccess
-    	    	    raise Amazon::RequestError, "HTTP Response: #{res.code} #{res.message}"
+    	    	    raise Amazon::RequestError, "HTTP Response: #{res.code} #{res.message} #{res.body}"
     	    end
     	    log "Response text: #{res.body}"
     	    Response.new(res.body)
@@ -139,26 +139,29 @@ module Amazon
       
     private 
     
-    def self.prepare_url(domain)
-    	    
-    	    timestamp = ( Time::now ).utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")    	    
-    	    secret_key = secret_key = self.options[:aws_secret_key]    	    
-    	    action = self.options[:action]    	    
-    	    signature = Base64.encode64( OpenSSL::HMAC.digest( OpenSSL::Digest::Digest.new( "sha1" ), secret_key, action + timestamp)).strip    	    
-    	    url = URI.parse("http://awis.amazonaws.com/?" +
-    	    	    	{
-    	    	    		"Action"       => action,
-    	    	    		"AWSAccessKeyId"  => self.options[:aws_access_key_id],
-    	    	    		"Signature"       => signature,
-    	    	    		"Timestamp"       => timestamp,
-    	    	    		"ResponseGroup"   => self.options[:responsegroup],
-    	    	    		"Url"           => domain
-          		}.to_a.collect{|item| item.first + "=" + CGI::escape(item.last) }.join("&")
-          		)
-            return url
-    	    
+    # Converts a hash into a query string (e.g. {a => 1, b => 2} becomes "a=1&b=2")
+    def self.escape_query(query)
+      query.to_a.collect { |item| item.first + '=' + CGI::escape(item.last.to_s) }.join('&')
     end
-     
+    
+    def self.prepare_url(domain)
+      query = {
+        'AWSAccessKeyId'   => self.options[:aws_access_key_id],
+        'Action'           => self.options[:action],
+        'ResponseGroup'    => self.options[:responsegroup],
+        'SignatureMethod'  => 'HmacSHA1',
+        'SignatureVersion' => 2,
+        'Timestamp'        => Time.now.utc.iso8601,
+        'Url'              => domain
+      }
+      awis_domain = 'awis.amazonaws.com'
+      URI.parse("http://#{awis_domain}/?" + escape_query(query.merge({ 
+        'Signature' => Base64.encode64(
+          OpenSSL::HMAC.digest(
+            'sha1', self.options[:aws_secret_key], 
+            "GET\n#{awis_domain}\n/\n" + escape_query(query).strip)).chomp
+      })))
+    end     
   end
 
   # Internal wrapper class to provide convenient method to access Hpricot element value.
