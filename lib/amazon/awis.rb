@@ -53,6 +53,11 @@ module Amazon
       raise ArgumentError, "Block is required." unless block_given?
       yield @@config
     end
+
+# escape str to RFC 3986
+def escapeRFC3986(str)
+  return URI.escape(str,/[^A-Za-z0-9\-_.~]/)
+end
     
     # Default service options
     def options
@@ -148,20 +153,33 @@ module Amazon
   private 
     
     def prepare_url(domain, response_group)
-      timestamp = ( Time::now ).utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-      secret_key = @@config[:aws_secret_key]
-      action = camelize(options[:action].to_s)
-      signature = Base64.encode64( OpenSSL::HMAC.digest( OpenSSL::Digest::Digest.new( "sha1" ), secret_key, action + timestamp)).strip
-      url = URI.parse("http://awis.amazonaws.com/?" +
-        {
-          "Action"          => action,
-          "AWSAccessKeyId"  => @@config[:aws_access_key_id],
-          "Signature"       => signature,
-          "Timestamp"       => timestamp,
-          "ResponseGroup"   => camelize(response_group.to_s),
-          "Url"             => domain
-        }.to_a.collect{|item| item.first + "=" + CGI::escape(item.last) }.join("&")
-      )
+
+			action = "UrlInfo"
+			responseGroup = "Rank,ContactInfo,LinksInCount"
+			timestamp = ( Time::now ).utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+			query = {
+  			"Action"           => action,
+  			"AWSAccessKeyId"   => @@config[:aws_access_key_id],
+  			"Timestamp"        => timestamp,
+  			"ResponseGroup"    => response_group,
+  			"SignatureVersion" => 2,
+  			"SignatureMethod"  => "HmacSHA1",
+  			"Url"              => domain
+			}
+
+
+			query_str = query.sort.map{|k,v| k + "=" + escapeRFC3986(v.to_s())}.join('&')
+
+			sign_str = "GET\n" + "awis.amazonaws.com" + "\n/\n" + query_str 
+
+			puts "String to sign:\n#{sign_str}\n\n"
+
+			signature = Base64.encode64( OpenSSL::HMAC.digest( OpenSSL::Digest::Digest.new( "sha1" ), @@config[:aws_secret_key], sign_str)).strip
+			query_str += "&Signature=" + escapeRFC3986(signature)
+
+			url = URI.parse("http://" + "awis.amazonaws.com" + "/?" + query_str)
+
       return url
     end
     
@@ -272,3 +290,4 @@ module Amazon
     end
   end
 end
+
