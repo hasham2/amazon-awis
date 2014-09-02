@@ -54,10 +54,10 @@ module Amazon
       yield @@config
     end
 
-# escape str to RFC 3986
-def escapeRFC3986(str)
-  return URI.escape(str,/[^A-Za-z0-9\-_.~]/)
-end
+    # escape str to RFC 3986
+    def escapeRFC3986(str)
+      return URI.escape(str,/[^A-Za-z0-9\-_.~]/)
+    end
     
     # Default service options
     def options
@@ -179,7 +179,7 @@ end
 			query_str += "&Signature=" + escapeRFC3986(signature)
 
 			url = URI.parse("http://" + "awis.amazonaws.com" + "/?" + query_str)
-
+			puts url
       return url
     end
     
